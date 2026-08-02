@@ -6,7 +6,7 @@ import { StatCard } from "@/components/stat-card";
 import { CalendarCheck, BedDouble, Wallet, ClipboardList } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ShiftCard } from "./shift-card";
-import { startShift, endShift, type ActionResult } from "./actions";
+import { startShift, endShift } from "./actions";
 
 export const metadata: Metadata = { title: "Reception Dashboard | Hotel HMS" };
 
@@ -23,11 +23,7 @@ export default async function ReceptionDashboard() {
   ]);
 
   const startShiftAction = startShift.bind(null, actorId);
-  const endShiftAction = async (_prev: ActionResult, _formData: FormData) => {
-    void _prev;
-    void _formData;
-    return endShift(actorId);
-  };
+  const endShiftAction = endShift.bind(null, actorId);
 
   return (
     <div className="space-y-6">

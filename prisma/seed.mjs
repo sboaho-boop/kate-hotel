@@ -8,6 +8,12 @@ async function main() {
   const superAdminPassword = process.env.SEED_SUPER_ADMIN_PASSWORD || "Super@123";
   const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@hotel.test";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || "Admin@123";
+  const receptionEmail = process.env.SEED_RECEPTION_EMAIL || "reception@hotel.test";
+  const receptionPassword = process.env.SEED_RECEPTION_PASSWORD || "Reception@123";
+  const cleanerEmail = process.env.SEED_CLEANER_EMAIL || "cleaner@hotel.test";
+  const cleanerPassword = process.env.SEED_CLEANER_PASSWORD || "Cleaner@123";
+  const guestEmail = process.env.SEED_GUEST_EMAIL || "guest@hotel.test";
+  const guestPassword = process.env.SEED_GUEST_PASSWORD || "Guest@123";
 
   const superAdmin = await prisma.user.upsert({
     where: { email: superAdminEmail },
@@ -28,6 +34,42 @@ async function main() {
       passwordHash: await bcrypt.hash(adminPassword, 10),
       name: "Hotel Admin",
       role: Role.ADMIN,
+    },
+  });
+
+  const reception = await prisma.user.upsert({
+    where: { email: receptionEmail },
+    update: {},
+    create: {
+      email: receptionEmail,
+      passwordHash: await bcrypt.hash(receptionPassword, 10),
+      name: "Front Desk",
+      phone: "+254700000002",
+      role: Role.RECEPTION,
+    },
+  });
+
+  const cleaner = await prisma.user.upsert({
+    where: { email: cleanerEmail },
+    update: {},
+    create: {
+      email: cleanerEmail,
+      passwordHash: await bcrypt.hash(cleanerPassword, 10),
+      name: "Housekeeping",
+      phone: "+254700000003",
+      role: Role.CLEANER,
+    },
+  });
+
+  const guest = await prisma.user.upsert({
+    where: { email: guestEmail },
+    update: {},
+    create: {
+      email: guestEmail,
+      passwordHash: await bcrypt.hash(guestPassword, 10),
+      name: "Demo Guest",
+      phone: "+254700000004",
+      role: Role.GUEST,
     },
   });
 
@@ -66,6 +108,9 @@ async function main() {
   console.log("Seeded:");
   console.log("  Super admin  ->", superAdmin.email);
   console.log("  Admin        ->", admin.email);
+  console.log("  Reception    ->", reception.email);
+  console.log("  Cleaner      ->", cleaner.email);
+  console.log("  Guest        ->", guest.email);
   console.log(`  Rooms created -> ${roomCount} (${sampleRooms.length} total configured)`);
   console.log(`  NFC cards     -> ${cardCount} created`);
 }
