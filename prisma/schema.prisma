@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  RECEPTION
+  CLEANER
+  GUEST
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  CLEANING
+  MAINTENANCE
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  TWIN
+  SUITE
+  FAMILY
+  DELUXE
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE
+  OTHER
+}
+
+enum StayStatus {
+  CHECKED_IN
+  CHECKED_OUT
+  TRANSFERRED
+}
+
+enum ShiftStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+enum NfcStatus {
+  UNASSIGNED
+  ASSIGNED
+  REVOKED
+}
+
+enum ConversationType {
+  GUEST_SUPPORT
+  INTERNAL
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         Role      @default(GUEST)
+  isOnDuty     Boolean   @default(false)
+  isActive     Boolean   @default(true)
+
+  // Guest profile fields
+  nationalId   String?
+  address      String?
+
+  staysCheckedIn     Stay[]           @relation("receptionist")
+  staysAsGuest       Stay[]           @relation("guest")
+  paymentsRecorded   Payment[]
+  shifts             Shift[]
+  shiftReportsReceived ShiftReport[]
+  housekeepingTasks  HousekeepingTask[] @relation("assignedCleaner")
+  housekeepingIssued HousekeepingTask[] @relation("assignedBy")
+  checkInLogs        CheckInLog[]
+  auditLogs          AuditLog[]
+  conversations      Conversation[]
+  messagesSent       Message[]        @relation("messageSender")
+  messagesReceived   Message[]        @relation("messageReceiver")
+  notifications      Notification[]
+  smsLogs            SmsLog[]
+  nfcCardsIssued     NfcCard[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Room {
+  id       String     @id @default(cuid())
+  number   String     @unique
+  floor    Int
+  type     RoomType
+  capacity Int        @default(1)
+  price    Float
+  status   RoomStatus @default(AVAILABLE)
+
+  nfcCards  NfcCard[]
+  stays     Stay[]
+  tasks     HousekeepingTask[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NfcCard {
+  id        String    @id @default(cuid())
+  uid       String    @unique
+  status    NfcStatus @default(UNASSIGNED)
+  roomId    String?
+  room      Room?     @relation(fields: [roomId], references: [id])
+  issuedById String?
+  issuedBy  User?     @relation(fields: [issuedById], references: [id])
+  issuedAt  DateTime?
+  stay      Stay?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Stay {
+  id            String      @id @default(cuid())
+  guestId       String
+  guest         User        @relation("guest", fields: [guestId], references: [id])
+  roomId        String
+  room          Room        @relation(fields: [roomId], references: [id])
+  nfcCardId     String?    @unique
+  nfcCard       NfcCard?   @relation(fields: [nfcCardId], references: [id])
+  receptionistId String
+  receptionist  User        @relation("receptionist", fields: [receptionistId], references: [id])
+  status        StayStatus  @default(CHECKED_IN)
+  checkInAt     DateTime    @default(now())
+  checkOutAt    DateTime?
+  transferredToId String?
+  notes         String?
+
+  payments Payment[]
+  smsLogs  SmsLog[]
+  checkInLogs CheckInLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([guestId])
+  @@index([roomId])
+  @@index([status])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  stayId       String
+  stay         Stay          @relation(fields: [stayId], references: [id])
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  status       PaymentStatus @default(PAID)
+  paidAt       DateTime?
+  recordedById String?
+  recordedBy   User?         @relation(fields: [recordedById], references: [id])
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Shift {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  startedAt DateTime     @default(now())
+  endedAt   DateTime?
+  status    ShiftStatus  @default(ACTIVE)
+
+  reports ShiftReport[]
+
+  createdAt DateTime @default(now())
+}
+
+model ShiftReport {
+  id        String   @id @default(cuid())
+  shiftId   String
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  generatedAt DateTime @default(now())
+  pdfPath   String?
+  sentToId  String?
+  sentTo    User?    @relation(fields: [sentToId], references: [id])
+}
+
+model HousekeepingTask {
+  id           String     @id @default(cuid())
+  roomId       String
+  room         Room       @relation(fields: [roomId], references: [id])
+  assignedToId String
+  assignedTo   User       @relation("assignedCleaner", fields: [assignedToId], references: [id])
+  assignedById String
+  assignedBy   User       @relation("assignedBy", fields: [assignedById], references: [id])
+  taskDate     DateTime   @default(now())
+  status       TaskStatus @default(PENDING)
+  notes        String?
+  completedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assignedToId])
+  @@index([taskDate])
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  type      ConversationType @default(GUEST_SUPPORT)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  subject   String?
+  isOpen    Boolean          @default(true)
+  messages  Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation("messageSender", fields: [senderId], references: [id])
+  receiverId     String
+  receiver       User         @relation("messageReceiver", fields: [receiverId], references: [id])
+  body           String
+  relayedById    String?
+  readAt         DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+model CheckInLog {
+  id          String   @id @default(cuid())
+  stayId      String
+  stay        Stay     @relation(fields: [stayId], references: [id])
+  actorId     String
+  actor       User     @relation(fields: [actorId], references: [id])
+  action      String
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+}
+
+model SmsLog {
+  id           String   @id @default(cuid())
+  stayId       String?
+  stay         Stay?    @relation(fields: [stayId], references: [id])
+  phone        String
+  message      String
+  provider     String   @default("africastalking")
+  status       String   @default("PENDING")
+  providerRef  String?
+  sentById     String?
+  sentBy       User?    @relation(fields: [sentById], references: [id])
+  createdAt    DateTime @default(now())
+}
