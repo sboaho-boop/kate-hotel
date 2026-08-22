@@ -62,18 +62,26 @@ export default async function PaymentsPage() {
                     <Badge tone={p.status === "PAID" ? "green" : "red"}>{p.status}</Badge>
                   </TD>
                   <TD className="text-right">
-                    {p.status === "UNPAID" ? (
-                      <form action={settlePayment.bind(null, actorId, p.id)}>
-                        <button
-                          type="submit"
-                          className="rounded-md px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50"
-                        >
-                          Mark paid
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      {p.status === "UNPAID" ? (
+                        <form action={settlePayment.bind(null, actorId, p.id)}>
+                          <button
+                            type="submit"
+                            className="rounded-md px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50"
+                          >
+                            Mark paid
+                          </button>
+                        </form>
+                      ) : null}
+                      <a
+                        href={`/receipt/${p.stay.id}?auto=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                      >
+                        Receipt
+                      </a>
+                    </div>
                   </TD>
                 </TR>
               ))}

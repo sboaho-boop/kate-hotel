@@ -141,6 +141,14 @@ export default async function CheckInPage() {
                             ) : null}
                           </>
                         ) : null}
+                        <a
+                          href={`/receipt/${stay.id}?auto=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                        >
+                          Receipt
+                        </a>
                         <form action={checkOut.bind(null, actorId, stay.id)}>
                           <button
                             type="submit"
