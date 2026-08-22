@@ -83,7 +83,7 @@ export async function checkInGuest(
     amount: formData.get("amount"),
     paymentMethod: formData.get("paymentMethod"),
     paymentStatus: formData.get("paymentStatus"),
-    paymentReference: formData.get("paymentReference"),
+    paymentReference: formData.get("paymentReference") ?? "",
   });
 
   if (!parsed.success) {
