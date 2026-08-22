@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { DutyGate } from "@/components/duty-gate";
 import { ROLE_HOME } from "@/lib/rbac";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardLayout({
@@ -17,10 +18,13 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isOnDuty: true },
-  });
+  const [user, settings] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isOnDuty: true },
+    }),
+    getHotelSettings(),
+  ]);
 
   return (
     <AppShell
@@ -30,6 +34,7 @@ export default async function DashboardLayout({
         email: session.user.email,
         role: session.user.role,
       }}
+      hotelName={settings.name}
     >
       <DutyGate role={session.user.role} home={ROLE_HOME[session.user.role]} onDuty={user?.isOnDuty ?? false}>
         {children}

@@ -7,7 +7,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { sendSms, welcomeSmsText, hotelConfig } from "@/lib/sms";
+import { sendSms, welcomeSmsText } from "@/lib/sms";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { notifyManagement } from "@/lib/notify";
 import { renderShiftReportPdf, type ReportData } from "@/lib/report";
 import type { RoleKey } from "@/types/next-auth";
@@ -31,19 +32,36 @@ const requireReception = async (actorId: string) => {
   return actor;
 };
 
-const checkInSchema = z.object({
-  guestName: z.string().trim().min(2, "Guest name is required"),
-  guestPhone: z.string().trim().min(7, "A valid phone number is required"),
-  guestEmail: z.string().trim().email("Invalid email").optional().or(z.literal("")),
-  nationalId: z.string().trim().optional().or(z.literal("")),
-  address: z.string().trim().optional().or(z.literal("")),
-  guestPassword: z.string().trim().optional().or(z.literal("")),
-  roomId: z.string().min(1, "Select a room"),
-  nfcCardId: z.string().min(1, "Select an NFC card"),
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
-  paymentMethod: z.enum(["CASH", "CARD", "MOBILE", "OTHER"]),
-  paymentStatus: z.enum(["PAID", "UNPAID"]),
-});
+const checkInSchema = z
+  .object({
+    guestName: z.string().trim().min(2, "Guest name is required"),
+    guestPhone: z.string().trim().min(7, "A valid phone number is required"),
+    guestEmail: z.string().trim().email("Invalid email").optional().or(z.literal("")),
+    nationalId: z.string().trim().optional().or(z.literal("")),
+    address: z.string().trim().optional().or(z.literal("")),
+    guestPassword: z.string().trim().optional().or(z.literal("")),
+    roomId: z.string().min(1, "Select a room"),
+    nfcCardId: z.string().min(1, "Select an NFC card"),
+    amount: z.coerce.number().positive("Amount must be greater than 0"),
+    paymentMethod: z.enum(["CASH", "CARD", "MOBILE", "OTHER"]),
+    paymentStatus: z.enum(["PAID", "UNPAID"]),
+    paymentReference: z.string().trim().max(60).optional().or(z.literal("")),
+  })
+  .superRefine((val, ctx) => {
+    if (
+      (val.paymentMethod === "CARD" || val.paymentMethod === "MOBILE") &&
+      !val.paymentReference
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["paymentReference"],
+        message:
+          val.paymentMethod === "MOBILE"
+            ? "A mobile money reference number is required"
+            : "A POS/card transaction reference is required",
+      });
+    }
+  });
 
 const fmtTime = (d: Date) =>
   d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -65,6 +83,7 @@ export async function checkInGuest(
     amount: formData.get("amount"),
     paymentMethod: formData.get("paymentMethod"),
     paymentStatus: formData.get("paymentStatus"),
+    paymentReference: formData.get("paymentReference"),
   });
 
   if (!parsed.success) {
@@ -147,6 +166,7 @@ export async function checkInGuest(
           amount: data.amount,
           method: data.paymentMethod,
           status: paid ? "PAID" : "UNPAID",
+          reference: data.paymentReference || null,
           paidAt: paid ? new Date() : null,
           recordedById: actorId,
         },
@@ -303,7 +323,8 @@ export async function endShift(actorId: string): Promise<ActionResult> {
     const unpaidStaysFiltered = unpaidStays.filter((s) => s.payments.some((p) => p.status === "UNPAID"));
 
     const reportData: ReportData = {
-      hotelName: hotelConfig().name,
+      hotelName: (await getHotelSettings()).name,
+      currencySymbol: (await getHotelSettings()).currency.symbol,
       staffName: (await prisma.user.findUnique({ where: { id: actorId } }))?.name ?? actorId,
       shiftId: shift.id,
       startedAt: fmtTime(shift.startedAt),

@@ -18,6 +18,7 @@ import {
   Wallet,
   FileText,
   Bell,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/rbac";
@@ -37,6 +38,7 @@ const NAV_BY_ROLE: Record<RoleKey, NavItem[]> = {
     { href: "/dashboard/super-admin/chats", label: "Chats", icon: MessageSquare },
     { href: "/dashboard/super-admin/housekeeping", label: "Housekeeping", icon: ClipboardList },
     { href: "/dashboard/super-admin/notifications", label: "Notifications", icon: Bell },
+    { href: "/dashboard/super-admin/settings", label: "Settings", icon: Settings },
   ],
   ADMIN: [
     { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +49,7 @@ const NAV_BY_ROLE: Record<RoleKey, NavItem[]> = {
     { href: "/dashboard/admin/chats", label: "Chats", icon: MessageSquare },
     { href: "/dashboard/admin/housekeeping", label: "Housekeeping", icon: ClipboardList },
     { href: "/dashboard/admin/notifications", label: "Notifications", icon: Bell },
+    { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },
   ],
   RECEPTION: [
     { href: "/dashboard/reception", label: "Dashboard", icon: LayoutDashboard },
@@ -67,9 +70,11 @@ const NAV_BY_ROLE: Record<RoleKey, NavItem[]> = {
 
 export function AppShell({
   user,
+  hotelName,
   children,
 }: {
   user: { id: string; name: string; email: string; role: RoleKey };
+  hotelName: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -82,7 +87,7 @@ export function AppShell({
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
         <div className="flex items-center gap-2 font-semibold text-gray-900">
           <Hotel className="h-5 w-5 text-indigo-600" />
-          Hotel HMS
+          {hotelName}
         </div>
         <button
           onClick={() => setOpen(!open)}
@@ -106,7 +111,7 @@ export function AppShell({
               <Hotel className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Hotel HMS</p>
+              <p className="text-sm font-semibold text-white">{hotelName}</p>
               <p className="text-xs text-slate-400">Operations Console</p>
             </div>
           </div>

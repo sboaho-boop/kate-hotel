@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { Hotel } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 
@@ -10,6 +11,7 @@ export const metadata: Metadata = { title: "Sign in | Hotel HMS" };
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
   if (session?.user) redirect("/dashboard");
+  const settings = await getHotelSettings();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
@@ -19,7 +21,7 @@ export default async function LoginPage() {
             <Hotel className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Hotel HMS</h1>
+            <h1 className="text-xl font-bold text-white">{settings.name}</h1>
             <p className="text-sm text-slate-400">Staff &amp; Guest Operations</p>
           </div>
         </div>

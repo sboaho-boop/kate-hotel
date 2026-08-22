@@ -175,12 +175,19 @@ model Payment {
   amount       Float
   method       PaymentMethod @default(CASH)
   status       PaymentStatus @default(PAID)
+  reference    String?
   paidAt       DateTime?
   recordedById String?
   recordedBy   User?         @relation(fields: [recordedById], references: [id])
   notes        String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String
   updatedAt DateTime @updatedAt
 }
 

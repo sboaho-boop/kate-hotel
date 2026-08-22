@@ -3,6 +3,7 @@ export type ReceiptPayment = {
   methodLabel: string;
   amount: number;
   status: string;
+  reference?: string | null;
 };
 
 export type ReceiptData = {
@@ -24,9 +25,11 @@ export type ReceiptData = {
   payments: ReceiptPayment[];
   paidTotal: number;
   dueTotal: number;
+  currencySymbol: string;
 };
 
-const money = (n: number) => `KES ${n.toLocaleString("en-US")}`;
+const money = (n: number, d: ReceiptData) =>
+  `${d.currencySymbol}${n.toLocaleString("en-US")}`;
 
 function row(left: string, right: string, width: number): string {
   const space = width - left.length - right.length;
@@ -65,7 +68,7 @@ export function buildReceiptText(d: ReceiptData, width: number): string {
   push(divider(width));
   push("STAY");
   push(`Room: ${d.roomNumber} (${d.roomType})`);
-  push(`Rate: ${money(d.roomRate)} / night`);
+  push(`Rate: ${money(d.roomRate, d)} / night`);
   push(`In: ${d.checkInAt}`);
   if (d.checkOutAt) push(`Out: ${d.checkOutAt}`);
   if (d.nfcCardUid) push(`Key card: ${d.nfcCardUid}`);
@@ -79,16 +82,17 @@ export function buildReceiptText(d: ReceiptData, width: number): string {
       push(
         row(
           p.methodLabel,
-          `${money(p.amount)} ${p.status}`.padStart(1),
+          `${money(p.amount, d)} ${p.status}`.padStart(1),
           width
         )
       );
+      if (p.reference) push(`  Ref: ${p.reference}`);
     }
   }
   push(divider(width));
-  push(row("TOTAL PAID:", money(d.paidTotal), width));
+  push(row("TOTAL PAID:", money(d.paidTotal, d), width));
   if (d.dueTotal > 0) {
-    push(row("BALANCE DUE:", money(d.dueTotal), width));
+    push(row("BALANCE DUE:", money(d.dueTotal, d), width));
   }
   push(divider(width));
   push();

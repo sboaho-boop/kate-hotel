@@ -20,6 +20,7 @@ export type ReportStay = {
 
 export type ReportData = {
   hotelName: string;
+  currencySymbol: string;
   staffName: string;
   shiftId: string;
   startedAt: string;
@@ -55,8 +56,13 @@ const styles = StyleSheet.create({
   money: { textAlign: "right" },
 });
 
-function Currency({ value }: { value: number }) {
-  return <Text style={styles.money}>KES {value.toLocaleString()}</Text>;
+function Currency({ value, symbol }: { value: number; symbol: string }) {
+  return (
+    <Text style={styles.money}>
+      {symbol}
+      {value.toLocaleString()}
+    </Text>
+  );
 }
 
 export function ShiftReportDocument({ data }: { data: ReportData }) {
@@ -86,13 +92,15 @@ export function ShiftReportDocument({ data }: { data: ReportData }) {
           <View style={styles.summaryBox}>
             <Text style={styles.summaryLabel}>Collected</Text>
             <Text style={styles.summaryValue}>
-              KES {data.summary.totalCollected.toLocaleString()}
+              {data.currencySymbol}
+              {data.summary.totalCollected.toLocaleString()}
             </Text>
           </View>
           <View style={styles.summaryBox}>
             <Text style={styles.summaryLabel}>Unpaid total</Text>
             <Text style={styles.summaryValue}>
-              KES {data.summary.unpaidTotal.toLocaleString()}
+              {data.currencySymbol}
+              {data.summary.unpaidTotal.toLocaleString()}
             </Text>
           </View>
         </View>
@@ -114,7 +122,7 @@ export function ShiftReportDocument({ data }: { data: ReportData }) {
                 <Text style={styles.col}>{s.guest}</Text>
                 <Text style={styles.colMid}>{s.room}</Text>
                 <Text style={styles.colMid}>{s.card ?? "—"}</Text>
-                <Currency value={s.amount} />
+                <Currency value={s.amount} symbol={data.currencySymbol} />
                 <Text style={styles.colSmall}>{s.status}</Text>
               </View>
             ))}
@@ -137,7 +145,7 @@ export function ShiftReportDocument({ data }: { data: ReportData }) {
                 <Text style={styles.col}>{p.guest}</Text>
                 <Text style={styles.colMid}>{p.room}</Text>
                 <Text style={styles.colMid}>{p.method}</Text>
-                <Currency value={p.amount} />
+                <Currency value={p.amount} symbol={data.currencySymbol} />
               </View>
             ))}
           </View>
@@ -151,7 +159,7 @@ export function ShiftReportDocument({ data }: { data: ReportData }) {
                 <Text style={styles.col}>{s.guest}</Text>
                 <Text style={styles.colMid}>{s.phone}</Text>
                 <Text style={styles.colMid}>Room {s.room}</Text>
-                <Currency value={s.amount} />
+                <Currency value={s.amount} symbol={data.currencySymbol} />
               </View>
             ))}
           </View>

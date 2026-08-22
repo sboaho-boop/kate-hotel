@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { hotelConfig } from "@/lib/sms";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { buildReceiptText, type ReceiptData } from "@/lib/receipt";
 
 const methodLabel: Record<string, string> = {
@@ -40,6 +41,7 @@ export async function GET(
   }
 
   const cfg = hotelConfig();
+  const settings = await getHotelSettings();
   const paidTotal = stay.payments
     .filter((p) => p.status === "PAID")
     .reduce((sum, p) => sum + p.amount, 0);
@@ -48,7 +50,7 @@ export async function GET(
     .reduce((sum, p) => sum + p.amount, 0);
 
   const data: ReceiptData = {
-    hotelName: cfg.name,
+    hotelName: settings.name,
     wifiSsid: cfg.wifiSsid,
     wifiPassword: cfg.wifiPassword,
     receiptNo: stay.id.slice(-8).toUpperCase(),
@@ -68,9 +70,11 @@ export async function GET(
       methodLabel: methodLabel[p.method] ?? p.method,
       amount: p.amount,
       status: p.status,
+      reference: p.reference,
     })),
     paidTotal,
     dueTotal,
+    currencySymbol: settings.currency.symbol,
   };
 
   const widthParam = Number(req.nextUrl.searchParams.get("width") ?? "48");

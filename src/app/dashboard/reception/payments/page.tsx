@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, THead, TH, TR, TD } from "@/components/ui/table";
@@ -20,11 +21,14 @@ export default async function PaymentsPage() {
   const session = await getServerSession(authOptions);
   const actorId = session!.user.id;
 
-  const payments = await prisma.payment.findMany({
-    take: 100,
-    orderBy: { createdAt: "desc" },
-    include: { stay: { include: { guest: { select: { name: true } }, room: { select: { number: true } } } } },
-  });
+  const [payments, settings] = await Promise.all([
+    prisma.payment.findMany({
+      take: 100,
+      orderBy: { createdAt: "desc" },
+      include: { stay: { include: { guest: { select: { name: true } }, room: { select: { number: true } } } } },
+    }),
+    getHotelSettings(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -45,6 +49,7 @@ export default async function PaymentsPage() {
                 <TH>Guest</TH>
                 <TH>Room</TH>
                 <TH>Method</TH>
+                <TH>Reference</TH>
                 <TH>Amount</TH>
                 <TH>Status</TH>
                 <TH className="text-right">Actions</TH>
@@ -57,7 +62,11 @@ export default async function PaymentsPage() {
                   <TD className="font-medium text-gray-900">{p.stay.guest.name}</TD>
                   <TD>Room {p.stay.room.number}</TD>
                   <TD>{methodLabel[p.method] ?? p.method}</TD>
-                  <TD className="font-medium">KES {p.amount.toLocaleString()}</TD>
+                  <TD className="font-mono text-xs">{p.reference ?? <span className="text-gray-300">—</span>}</TD>
+                  <TD className="font-medium">
+                    {settings.currency.symbol}
+                    {p.amount.toLocaleString()}
+                  </TD>
                   <TD>
                     <Badge tone={p.status === "PAID" ? "green" : "red"}>{p.status}</Badge>
                   </TD>
@@ -87,7 +96,7 @@ export default async function PaymentsPage() {
               ))}
               {payments.length === 0 ? (
                 <TR>
-                  <TD colSpan={7} className="py-8 text-center text-gray-400">
+                  <TD colSpan={8} className="py-8 text-center text-gray-400">
                     No payments recorded yet.
                   </TD>
                 </TR>

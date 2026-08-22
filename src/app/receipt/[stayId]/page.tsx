@@ -5,13 +5,12 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { hotelConfig } from "@/lib/sms";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { ReceiptActions } from "./receipt-actions";
 
 export const metadata: Metadata = { title: "Receipt | Hotel HMS" };
 
 const PAPER_WIDTH_MM = 80;
-
-const money = (n: number) => `KES ${n.toLocaleString()}`;
 
 const methodLabel: Record<string, string> = {
   CASH: "Cash",
@@ -48,6 +47,9 @@ export default async function ReceiptPage({
   if (!stay) notFound();
 
   const cfg = hotelConfig();
+  const settings = await getHotelSettings();
+  const cur = settings.currency;
+  const money = (n: number) => `${cur.symbol}${n.toLocaleString()}`;
   const paidTotal = stay.payments
     .filter((p) => p.status === "PAID")
     .reduce((sum, p) => sum + p.amount, 0);
@@ -75,7 +77,7 @@ export default async function ReceiptPage({
         style={{ minWidth: 260 }}
       >
         <div className="text-center">
-          <p className="text-[15px] font-bold uppercase tracking-wide">{cfg.name}</p>
+          <p className="text-[15px] font-bold uppercase tracking-wide">{settings.name}</p>
           <p className="mt-0.5">*** GUEST RECEIPT ***</p>
         </div>
 
@@ -133,7 +135,12 @@ export default async function ReceiptPage({
             <tbody>
               {stay.payments.map((p) => (
                 <tr key={p.id} className="border-b border-dashed border-gray-200">
-                  <td className="py-0.5">{methodLabel[p.method] ?? p.method}</td>
+                  <td className="py-0.5">
+                    {methodLabel[p.method] ?? p.method}
+                    {p.reference ? (
+                      <span className="block text-[9px]">Ref: {p.reference}</span>
+                    ) : null}
+                  </td>
                   <td className="py-0.5 text-right">{money(p.amount)}</td>
                   <td className={`py-0.5 text-right ${p.status === "PAID" ? "" : "font-bold"}`}>
                     {p.status}
@@ -167,7 +174,7 @@ export default async function ReceiptPage({
             {cfg.wifiSsid} &nbsp;/&nbsp; {cfg.wifiPassword}
           </p>
           <p className="mt-3">Thank you for staying with us!</p>
-          <p className="mt-1">{cfg.name}</p>
+          <p className="mt-1">{settings.name}</p>
           <p className="mt-3 text-[9px]">Powered by Hotel HMS</p>
         </div>
       </div>

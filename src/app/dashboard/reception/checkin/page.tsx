@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, THead, TH, TR, TD } from "@/components/ui/table";
@@ -16,7 +17,7 @@ export default async function CheckInPage() {
   const session = await getServerSession(authOptions);
   const actorId = session!.user.id;
 
-  const [rooms, cards, stays, flagLogs] = await Promise.all([
+  const [rooms, cards, stays, flagLogs, settings] = await Promise.all([
     prisma.room.findMany({ where: { status: "AVAILABLE" }, orderBy: { number: "asc" } }),
     prisma.nfcCard.findMany({
       where: { status: { in: ["UNASSIGNED", "ASSIGNED"] } },
@@ -37,6 +38,7 @@ export default async function CheckInPage() {
       orderBy: { createdAt: "desc" },
       select: { stayId: true, action: true },
     }),
+    getHotelSettings(),
   ]);
 
   const flagMap = new Map<string, boolean>();
@@ -62,6 +64,7 @@ export default async function CheckInPage() {
             action={checkInAction}
             rooms={rooms.map((r) => ({ id: r.id, number: r.number, price: r.price }))}
             cards={cards.map((c) => ({ id: c.id, uid: c.uid, roomId: c.roomId }))}
+            currency={settings.currency}
           />
         </CardContent>
       </Card>
@@ -102,7 +105,9 @@ export default async function CheckInPage() {
                     <TD className="text-xs text-gray-500">{stay.checkInAt.toLocaleString()}</TD>
                     <TD>
                       <Badge tone={statusTone(!unpaid)}>
-                        {unpaid ? `UNPAID · KES ${unpaidAmount.toLocaleString()}` : "PAID"}
+                        {unpaid
+                          ? `UNPAID · ${settings.currency.symbol}${unpaidAmount.toLocaleString()}`
+                          : "PAID"}
                       </Badge>
                     </TD>
                     <TD>{flagged ? <Badge tone="amber">Next shift</Badge> : <span className="text-gray-300">—</span>}</TD>

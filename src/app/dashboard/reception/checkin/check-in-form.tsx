@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import type { ActionResult } from "@/app/dashboard/reception/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, FieldError } from "@/components/ui/field";
+import type { Currency } from "@/lib/hotel-settings";
 
 export type RoomOption = { id: string; number: string; price: number };
 export type CardOption = { id: string; uid: string; roomId: string | null };
@@ -12,18 +13,22 @@ export function CheckInForm({
   action,
   rooms,
   cards,
+  currency,
 }: {
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   rooms: RoomOption[];
   cards: CardOption[];
+  currency: Currency;
 }) {
   const [state, formAction, pending] = useActionState(action, { success: false, message: "" });
   const [roomId, setRoomId] = useState("");
   const [amount, setAmount] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"PAID" | "UNPAID">("PAID");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
 
   const selectedRoom = rooms.find((r) => r.id === roomId);
   const availableCards = cards.filter((c) => c.roomId === null || c.roomId === roomId);
+  const needsReference = paymentMethod === "CARD" || paymentMethod === "MOBILE";
 
   function onRoomChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
@@ -87,7 +92,8 @@ export function CheckInForm({
               </option>
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>
-                  Room {r.number} · KES {r.price.toLocaleString()}
+                  Room {r.number} · {currency.symbol}
+                  {r.price.toLocaleString()}
                 </option>
               ))}
             </Select>
@@ -109,7 +115,7 @@ export function CheckInForm({
             <FieldError message={state.fieldErrors?.nfcCardId} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (KES) *</Label>
+            <Label htmlFor="amount">Amount ({currency.code}) *</Label>
             <Input
               id="amount"
               name="amount"
@@ -125,14 +131,33 @@ export function CheckInForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">Payment method *</Label>
-            <Select id="paymentMethod" name="paymentMethod" defaultValue="CASH">
+            <Select
+              id="paymentMethod"
+              name="paymentMethod"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
               <option value="CASH">Cash</option>
-              <option value="CARD">Card</option>
-              <option value="MOBILE">Mobile money</option>
+              <option value="CARD">Card / POS</option>
+              <option value="MOBILE">Mobile money (M-Pesa/MoMo)</option>
               <option value="OTHER">Other</option>
             </Select>
             <FieldError message={state.fieldErrors?.paymentMethod} />
           </div>
+          {needsReference ? (
+            <div className="space-y-2">
+              <Label htmlFor="paymentReference">
+                Reference number {paymentMethod === "MOBILE" ? "(MoMo/M-Pesa code)" : "(POS slip ref)"} *
+              </Label>
+              <Input
+                id="paymentReference"
+                name="paymentReference"
+                placeholder={paymentMethod === "MOBILE" ? "e.g. SGH4KL7M9P" : "e.g. POS-004512"}
+                required={needsReference}
+              />
+              <FieldError message={state.fieldErrors?.paymentReference} />
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label>Payment status *</Label>
             <div className="flex gap-4 pt-2">
