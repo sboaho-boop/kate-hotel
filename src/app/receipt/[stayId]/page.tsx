@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { hotelConfig } from "@/lib/sms";
-import { PrintButton } from "./print-button";
+import { ReceiptActions } from "./receipt-actions";
 
 export const metadata: Metadata = { title: "Receipt | Hotel HMS" };
 
@@ -68,7 +68,7 @@ export default async function ReceiptPage({
         .toolbar button { -webkit-print-color-adjust: exact; }
       `}</style>
 
-      <PrintButton autoPrint={autoPrint} />
+      <ReceiptActions stayId={stay.id} autoPrint={autoPrint} />
 
       <div
         className="receipt-paper mx-auto w-[340px] max-w-[92vw] bg-white px-4 py-5 font-mono text-[11px] leading-relaxed text-gray-900 shadow-lg"
