@@ -153,6 +153,7 @@ model Stay {
   status        StayStatus  @default(CHECKED_IN)
   checkInAt     DateTime    @default(now())
   expectedCheckOutAt DateTime?
+  checkoutReminderSentAt DateTime?
   checkOutAt    DateTime?
   transferredToId String?
   notes         String?
