@@ -4,17 +4,21 @@ import { useActionState } from "react";
 import type { ActionResult } from "@/app/dashboard/reception/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Download, Printer } from "lucide-react";
 
 export function ShiftCard({
   activeShift,
+  lastClosedShift,
   startShiftAction,
   endShiftAction,
 }: {
   activeShift: { id: string; startedAt: Date } | null;
+  lastClosedShift: { id: string; endedAt: Date | null } | null;
   startShiftAction: (formData: FormData) => void;
   endShiftAction: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }) {
   const [state, formAction, pending] = useActionState(endShiftAction, { success: false, message: "" });
+  const reportShiftId = activeShift ? null : lastClosedShift?.id ?? null;
 
   return (
     <Card>
@@ -57,6 +61,29 @@ export function ShiftCard({
             </form>
           </>
         )}
+        {reportShiftId ? (
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Last shift report</p>
+            <div className="mt-2 flex items-center gap-2">
+              <a
+                href={`/api/reports/${reportShiftId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print
+              </a>
+              <a
+                href={`/api/reports/${reportShiftId}?dl=1`}
+                className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download PDF
+              </a>
+            </div>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

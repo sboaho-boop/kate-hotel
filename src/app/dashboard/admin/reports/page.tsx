@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, THead, TH, TR, TD } from "@/components/ui/table";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Printer } from "lucide-react";
 
 export const metadata: Metadata = { title: "Shift Reports | Hotel HMS" };
 
@@ -51,21 +51,27 @@ export default async function ReportsPage() {
                   </TD>
                   <TD className="text-xs text-gray-500">{r.generatedAt.toLocaleString()}</TD>
                   <TD>
-                    <Badge tone={r.pdfPath ? "green" : "gray"}>{r.pdfPath ? "Ready" : "Pending"}</Badge>
+                    <Badge tone="green">Ready</Badge>
                   </TD>
                   <TD className="text-right">
-                    {r.pdfPath ? (
+                    <div className="flex items-center justify-end gap-2">
                       <a
-                        href={r.pdfPath}
-                        download
+                        href={`/api/reports/${r.shiftId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        Print
+                      </a>
+                      <a
+                        href={`/api/reports/${r.shiftId}?dl=1`}
                         className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500"
                       >
                         <Download className="h-3.5 w-3.5" />
                         PDF
                       </a>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
+                    </div>
                   </TD>
                 </TR>
               ))}

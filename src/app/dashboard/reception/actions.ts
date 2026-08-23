@@ -1,8 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +8,6 @@ import { logAudit } from "@/lib/audit";
 import { sendSms, welcomeSmsText } from "@/lib/sms";
 import { getHotelSettings } from "@/lib/hotel-settings";
 import { notifyManagement } from "@/lib/notify";
-import { renderShiftReportPdf, type ReportData } from "@/lib/report";
 import type { RoleKey } from "@/types/next-auth";
 import type { Room, Stay, User } from "@prisma/client";
 
@@ -62,9 +59,6 @@ const checkInSchema = z
       });
     }
   });
-
-const fmtTime = (d: Date) =>
-  d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export async function checkInGuest(
   actorId: string,
@@ -295,103 +289,30 @@ export async function endShift(actorId: string): Promise<ActionResult> {
     await prisma.shift.update({ where: { id: shift.id }, data: { endedAt, status: "CLOSED" } });
     await prisma.user.update({ where: { id: actorId }, data: { isOnDuty: false } });
 
-    const [checkIns, payments, unpaidStays] = await Promise.all([
-      prisma.stay.findMany({
-        where: {
-          receptionistId: actorId,
-          checkInAt: { gte: shift.startedAt, lte: endedAt },
-        },
-        include: { guest: true, room: true, nfcCard: true, payments: true },
-        orderBy: { checkInAt: "asc" },
-      }),
-      prisma.payment.findMany({
-        where: {
-          recordedById: actorId,
-          createdAt: { gte: shift.startedAt, lte: endedAt },
-          status: "PAID",
-        },
-        include: { stay: { include: { guest: true, room: true } } },
-        orderBy: { createdAt: "asc" },
-      }),
-      prisma.stay.findMany({
-        where: { status: "CHECKED_IN" },
-        include: { guest: true, room: true, payments: true },
-        orderBy: { checkInAt: "asc" },
-      }),
-    ]);
-
-    const unpaidStaysFiltered = unpaidStays.filter((s) => s.payments.some((p) => p.status === "UNPAID"));
-
-    const reportData: ReportData = {
-      hotelName: (await getHotelSettings()).name,
-      currencySymbol: (await getHotelSettings()).currency.symbol,
-      staffName: (await prisma.user.findUnique({ where: { id: actorId } }))?.name ?? actorId,
-      shiftId: shift.id,
-      startedAt: fmtTime(shift.startedAt),
-      endedAt: fmtTime(endedAt),
-      summary: {
-        checkIns: checkIns.length,
-        paymentsCount: payments.length,
-        totalCollected: payments.reduce((sum, p) => sum + p.amount, 0),
-        unpaidTotal: unpaidStaysFiltered.reduce((sum, s) => sum + s.payments.filter((p) => p.status === "UNPAID").reduce((a, b) => a + b.amount, 0), 0),
-      },
-      checkIns: checkIns.map((s) => ({
-        time: fmtTime(s.checkInAt),
-        guest: s.guest.name,
-        phone: s.guest.phone ?? "",
-        room: s.room.number,
-        card: s.nfcCard?.uid ?? null,
-        amount: s.payments[0]?.amount ?? 0,
-        status: s.payments.some((p) => p.status === "UNPAID") ? "UNPAID" : "PAID",
-      })),
-      payments: payments.map((p) => ({
-        time: fmtTime(p.createdAt),
-        guest: p.stay.guest.name,
-        room: p.stay.room.number,
-        method: p.method,
-        amount: p.amount,
-      })),
-      unpaidGuests: unpaidStaysFiltered.map((s) => ({
-        time: fmtTime(s.checkInAt),
-        guest: s.guest.name,
-        phone: s.guest.phone ?? "",
-        room: s.room.number,
-        card: null,
-        amount: s.payments.filter((p) => p.status === "UNPAID").reduce((a, b) => a + b.amount, 0),
-        status: "UNPAID",
-      })),
-    };
-
-    const pdfBuffer = await renderShiftReportPdf(reportData);
-    const reportDir = path.join(process.cwd(), "public", "reports");
-    await fs.mkdir(reportDir, { recursive: true });
-    const fileName = `shift-${shift.id}.pdf`;
-    await fs.writeFile(path.join(reportDir, fileName), pdfBuffer);
-
-    const admin = await prisma.user.findFirst({
-      where: { role: "ADMIN", isActive: true },
-      orderBy: { createdAt: "asc" },
-    });
-
     const report = await prisma.shiftReport.create({
       data: {
         shiftId: shift.id,
-        pdfPath: `/reports/${fileName}`,
-        sentToId: admin?.id ?? null,
+        sentToId:
+          (
+            await prisma.user.findFirst({
+              where: { role: "ADMIN", isActive: true },
+              orderBy: { createdAt: "asc" },
+            })
+          )?.id ?? null,
       },
     });
 
     await notifyManagement({
       type: "SHIFT_REPORT",
       title: "Shift report ready",
-      body: `${reportData.staffName} closed their shift. Report #${report.id} is available.`,
+      body: `${(await getHotelSettings()).name}: ${actorId} closed their shift. Report #${report.id} is available to admin.`,
     });
     await logAudit(actorId, "END_SHIFT", "Shift", shift.id, { report: report.id });
 
     revalidatePath("/dashboard/reception");
     revalidatePath("/dashboard/admin/reports");
     revalidatePath("/dashboard/super-admin/reports");
-    return { success: true, message: `Shift closed. Report ready at /reports/${fileName}` };
+    return { success: true, message: `Shift closed. Your PDF report is ready below — download or print it.` };
   } catch (err) {
     return { success: false, message: err instanceof Error ? err.message : "Failed to close shift." };
   }

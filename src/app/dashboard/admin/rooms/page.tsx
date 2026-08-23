@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getHotelSettings } from "@/lib/hotel-settings";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TH, TR, TD } from "@/components/ui/table";
@@ -30,7 +31,10 @@ export default async function RoomsPage() {
   const session = await getServerSession(authOptions);
   const actorId = session!.user.id;
 
-  const rooms = await prisma.room.findMany({ orderBy: [{ floor: "asc" }, { number: "asc" }] });
+  const [rooms, settings] = await Promise.all([
+    prisma.room.findMany({ orderBy: [{ floor: "asc" }, { number: "asc" }] }),
+    getHotelSettings(),
+  ]);
   const createRoomAction = createRoom.bind(null, actorId);
 
   return (
@@ -73,7 +77,10 @@ export default async function RoomsPage() {
                   <TD>Floor {room.floor}</TD>
                   <TD>{typeLabel[room.type]}</TD>
                   <TD>{room.capacity}</TD>
-                  <TD>KES {room.price.toLocaleString()}</TD>
+                  <TD>
+                    {settings.currency.symbol}
+                    {room.price.toLocaleString()}
+                  </TD>
                   <TD>
                     <Badge tone={statusTone[room.status]}>{room.status}</Badge>
                   </TD>

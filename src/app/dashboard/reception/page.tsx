@@ -14,12 +14,17 @@ export default async function ReceptionDashboard() {
   const session = await getServerSession(authOptions);
   const actorId = session!.user.id;
 
-  const [availableRooms, checkedIn, unpaidStays, activeShift, cleaningRooms] = await Promise.all([
+  const [availableRooms, checkedIn, unpaidStays, activeShift, cleaningRooms, lastClosedShift] = await Promise.all([
     prisma.room.count({ where: { status: "AVAILABLE" } }),
     prisma.stay.count({ where: { status: "CHECKED_IN" } }),
     prisma.payment.findMany({ where: { status: "UNPAID" }, select: { stayId: true } }).then((p) => new Set(p.map((x) => x.stayId)).size),
     prisma.shift.findFirst({ where: { userId: actorId, status: "ACTIVE" }, orderBy: { startedAt: "desc" } }),
     prisma.room.count({ where: { status: "CLEANING" } }),
+    prisma.shift.findFirst({
+      where: { userId: actorId, status: "CLOSED" },
+      orderBy: { endedAt: "desc" },
+      select: { id: true, endedAt: true },
+    }),
   ]);
 
   const startShiftAction = startShift.bind(null, actorId);
@@ -40,7 +45,12 @@ export default async function ReceptionDashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ShiftCard activeShift={activeShift} startShiftAction={startShiftAction} endShiftAction={endShiftAction} />
+        <ShiftCard
+          activeShift={activeShift}
+          lastClosedShift={lastClosedShift}
+          startShiftAction={startShiftAction}
+          endShiftAction={endShiftAction}
+        />
         <Card>
           <CardHeader>
             <CardTitle>Housekeeping</CardTitle>
