@@ -58,6 +58,45 @@ export async function createRoom(actorId: string, _prev: ActionResult, formData:
   }
 }
 
+export async function updateRoom(actorId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const roomId = String(formData.get("roomId") ?? "");
+  const parsed = createRoomSchema
+    .omit({ number: true })
+    .safeParse({
+      floor: formData.get("floor"),
+      type: formData.get("type"),
+      capacity: formData.get("capacity"),
+      price: formData.get("price"),
+    });
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0]);
+      fieldErrors[key] = fieldErrors[key] ?? issue.message;
+    }
+    return { success: false, message: "Please fix the errors below.", fieldErrors };
+  }
+
+  try {
+    await requireAdmin(actorId);
+
+    const room = await prisma.room.update({ where: { id: roomId }, data: parsed.data });
+    await logAudit(actorId, "UPDATE", "Room", room.id, {
+      number: room.number,
+      floor: room.floor,
+      type: room.type,
+      capacity: room.capacity,
+      price: room.price,
+    });
+    revalidatePath("/dashboard/admin/rooms");
+    revalidatePath("/dashboard/super-admin/rooms");
+    return { success: true, message: `Room ${room.number} updated.` };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : "Failed to update room." };
+  }
+}
+
 export async function updateRoomStatus(actorId: string, id: string, formData: FormData): Promise<void> {
   await requireAdmin(actorId);
   const status = String(formData.get("status") ?? "");
