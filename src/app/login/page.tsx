@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getHotelSettings } from "@/lib/hotel-settings";
-import { Hotel } from "lucide-react";
+import { Hotel, Download } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 
 export const metadata: Metadata = { title: "Sign in | Hotel HMS" };
@@ -32,6 +32,16 @@ export default async function LoginPage() {
         </div>
         <p className="mt-4 text-center text-xs text-slate-500">
           Seeded logins: superadmin@hotel.test / admin@hotel.test (see .env)
+        </p>
+        <p className="mt-2 text-center">
+          <a
+            href="/downloads/kate-court-hotel-system.zip"
+            download
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download system (source code)
+          </a>
         </p>
       </div>
     </div>
