@@ -152,6 +152,7 @@ model Stay {
   receptionist  User        @relation("receptionist", fields: [receptionistId], references: [id])
   status        StayStatus  @default(CHECKED_IN)
   checkInAt     DateTime    @default(now())
+  expectedCheckOutAt DateTime?
   checkOutAt    DateTime?
   transferredToId String?
   notes         String?

@@ -20,7 +20,8 @@ export type ReceiptData = {
   roomType: string;
   roomRate: number;
   checkInAt: string;
-  checkOutAt?: string | null;
+  checkoutAt: string;
+  durationLabel: string;
   nfcCardUid?: string | null;
   payments: ReceiptPayment[];
   paidTotal: number;
@@ -70,7 +71,8 @@ export function buildReceiptText(d: ReceiptData, width: number): string {
   push(`Room: ${d.roomNumber} (${d.roomType})`);
   push(`Rate: ${money(d.roomRate, d)} / night`);
   push(`In: ${d.checkInAt}`);
-  if (d.checkOutAt) push(`Out: ${d.checkOutAt}`);
+  push(`Checkout: ${d.checkoutAt}`);
+  push(`Duration: ${d.durationLabel}`);
   if (d.nfcCardUid) push(`Key card: ${d.nfcCardUid}`);
   push(divider(width));
   push("PAYMENTS");

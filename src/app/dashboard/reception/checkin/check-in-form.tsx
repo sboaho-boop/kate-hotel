@@ -22,6 +22,8 @@ export function CheckInForm({
 }) {
   const [state, formAction, pending] = useActionState(action, { success: false, message: "" });
   const [roomId, setRoomId] = useState("");
+  const [nights, setNights] = useState("1");
+  const [amountTouched, setAmountTouched] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"PAID" | "UNPAID">("PAID");
   const [paymentMethod, setPaymentMethod] = useState("CASH");
@@ -29,12 +31,23 @@ export function CheckInForm({
   const selectedRoom = rooms.find((r) => r.id === roomId);
   const availableCards = cards.filter((c) => c.roomId === null || c.roomId === roomId);
   const needsReference = paymentMethod === "CARD" || paymentMethod === "MOBILE";
+  const nightsNum = Math.max(1, Math.min(365, parseInt(nights || "1", 10) || 1));
 
   function onRoomChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
     setRoomId(id);
     const room = rooms.find((r) => r.id === id);
-    setAmount(room ? String(room.price) : "");
+    if (room && !amountTouched) setAmount(String(room.price * nightsNum));
+    else if (!room && !amountTouched) setAmount("");
+  }
+
+  function onNightsChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
+    setNights(v);
+    if (selectedRoom && !amountTouched) {
+      const n = Math.max(1, Math.min(365, parseInt(v || "1", 10) || 1));
+      setAmount(String(selectedRoom.price * n));
+    }
   }
 
   return (
@@ -115,6 +128,29 @@ export function CheckInForm({
             <FieldError message={state.fieldErrors?.nfcCardId} />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="nights">Nights (duration) *</Label>
+            <Input
+              id="nights"
+              name="nights"
+              type="number"
+              min={1}
+              max={365}
+              step="1"
+              value={nights}
+              onChange={onNightsChange}
+              required
+            />
+            <p className="text-xs text-gray-500">
+              Checkout:{" "}
+              {new Date(Date.now() + nightsNum * 86400000).toLocaleDateString(undefined, {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="amount">Amount ({currency.code}) *</Label>
             <Input
               id="amount"
@@ -123,8 +159,13 @@ export function CheckInForm({
               min={0}
               step="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={selectedRoom ? String(selectedRoom.price) : "e.g. 4500"}
+              onChange={(e) => {
+                setAmountTouched(true);
+                setAmount(e.target.value);
+              }}
+              placeholder={
+                selectedRoom ? String(selectedRoom.price * nightsNum) : "e.g. 4500"
+              }
               required
             />
             <FieldError message={state.fieldErrors?.amount} />

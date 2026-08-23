@@ -40,6 +40,7 @@ const checkInSchema = z
     roomId: z.string().min(1, "Select a room"),
     nfcCardId: z.string().min(1, "Select an NFC card"),
     amount: z.coerce.number().positive("Amount must be greater than 0"),
+    nights: z.coerce.number().int("Nights must be a whole number").min(1, "At least 1 night").max(365),
     paymentMethod: z.enum(["CASH", "CARD", "MOBILE", "OTHER"]),
     paymentStatus: z.enum(["PAID", "UNPAID"]),
     paymentReference: z.string().trim().max(60).optional().or(z.literal("")),
@@ -75,6 +76,7 @@ export async function checkInGuest(
     roomId: formData.get("roomId"),
     nfcCardId: formData.get("nfcCardId"),
     amount: formData.get("amount"),
+    nights: formData.get("nights") ?? "1",
     paymentMethod: formData.get("paymentMethod"),
     paymentStatus: formData.get("paymentStatus"),
     paymentReference: formData.get("paymentReference") ?? "",
@@ -137,6 +139,8 @@ export async function checkInGuest(
       }
 
       const paid = data.paymentStatus === "PAID";
+      const expectedCheckOutAt = new Date();
+      expectedCheckOutAt.setDate(expectedCheckOutAt.getDate() + data.nights);
 
       const stay = await tx.stay.create({
         data: {
@@ -145,6 +149,7 @@ export async function checkInGuest(
           nfcCardId: card.id,
           receptionistId: actorId,
           status: "CHECKED_IN",
+          expectedCheckOutAt,
         },
       });
 

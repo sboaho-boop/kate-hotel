@@ -57,6 +57,19 @@ export default async function ReceiptPage({
     .filter((p) => p.status === "UNPAID")
     .reduce((sum, p) => sum + p.amount, 0);
 
+  const checkoutDate = stay.checkOutAt ?? stay.expectedCheckOutAt ?? stay.checkInAt;
+  const nightsStayed = Math.max(
+    1,
+    Math.ceil((checkoutDate.getTime() - stay.checkInAt.getTime()) / 86400000)
+  );
+  const dateOnly = (d: Date) =>
+    d.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
   return (
     <div className="receipt-screen min-h-screen bg-gray-200 py-6">
       <style>{`
@@ -115,7 +128,13 @@ export default async function ReceiptPage({
         </p>
         <p>Room rate: {money(stay.room.price)} / night</p>
         <p>Checked in: {stay.checkInAt.toLocaleString()}</p>
-        {stay.checkOutAt ? <p>Checked out: {stay.checkOutAt.toLocaleString()}</p> : null}
+        <p>
+          Checkout: {dateOnly(checkoutDate)}
+          {stay.checkOutAt ? "" : " (expected)"}
+        </p>
+        <p>
+          Duration: {nightsStayed} night{nightsStayed === 1 ? "" : "s"}
+        </p>
         {stay.nfcCard ? <p>Key card: {stay.nfcCard.uid}</p> : null}
 
         <p className="my-3 text-center tracking-[4px]">- - - - - - - - - - -</p>

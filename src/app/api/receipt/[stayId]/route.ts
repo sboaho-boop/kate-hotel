@@ -49,6 +49,16 @@ export async function GET(
     .filter((p) => p.status === "UNPAID")
     .reduce((sum, p) => sum + p.amount, 0);
 
+  const checkoutDate = stay.checkOutAt ?? stay.expectedCheckOutAt ?? stay.checkInAt;
+  const nightsStayed = Math.max(
+    1,
+    Math.ceil(
+      (checkoutDate.getTime() - stay.checkInAt.getTime()) / 86400000
+    )
+  );
+  const dateOnly = (d: Date) =>
+    d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+
   const data: ReceiptData = {
     hotelName: settings.name,
     wifiSsid: cfg.wifiSsid,
@@ -63,7 +73,8 @@ export async function GET(
     roomType: stay.room.type,
     roomRate: stay.room.price,
     checkInAt: stay.checkInAt.toLocaleString("en-GB"),
-    checkOutAt: stay.checkOutAt ? stay.checkOutAt.toLocaleString("en-GB") : null,
+    checkoutAt: dateOnly(checkoutDate) + (stay.checkOutAt ? "" : " (expected)"),
+    durationLabel: `${nightsStayed} night${nightsStayed === 1 ? "" : "s"}`,
     nfcCardUid: stay.nfcCard?.uid ?? null,
     payments: stay.payments.map((p) => ({
       method: p.method,
