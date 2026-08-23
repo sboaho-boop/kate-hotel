@@ -13,7 +13,7 @@ export const CURRENCIES: Currency[] = [
   { code: "TZS", symbol: "TSh ", name: "Tanzanian Shilling" },
   { code: "RWF", symbol: "FRw ", name: "Rwandan Franc" },
   { code: "NGN", symbol: "₦ ", name: "Nigerian Naira" },
-  { code: "GHS", symbol: "C ", name: "Ghanaian Cedi" },
+  { code: "GHS", symbol: "GHC ", name: "Ghanaian Cedi" },
   { code: "ZAR", symbol: "R ", name: "South African Rand" },
   { code: "ZMW", symbol: "ZK ", name: "Zambian Kwacha" },
   { code: "ETB", symbol: "Br ", name: "Ethiopian Birr" },
