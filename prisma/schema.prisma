@@ -24,6 +24,10 @@ enum RoomStatus {
 }
 
 enum RoomType {
+  MICRO
+  STUDIO
+  ONE_BEDROOM
+  TWO_BEDROOM
   SINGLE
   DOUBLE
   TWIN

@@ -4,16 +4,8 @@ import { useActionState, useState } from "react";
 import type { ActionResult } from "@/app/dashboard/admin/staff/actions";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TH, TR, TD } from "@/components/ui/table";
+import { ROOM_TYPE_LABELS } from "@/lib/room-types";
 import { Pencil } from "lucide-react";
-
-const typeLabel: Record<string, string> = {
-  SINGLE: "Single",
-  DOUBLE: "Double",
-  TWIN: "Twin",
-  SUITE: "Suite",
-  FAMILY: "Family",
-  DELUXE: "Deluxe",
-};
 
 const statusTone: Record<string, "green" | "gray" | "amber" | "red"> = {
   AVAILABLE: "green",
@@ -52,7 +44,7 @@ export function RoomRow({
       <TR>
         <TD className="font-medium text-gray-900">Room {room.number}</TD>
         <TD>Floor {room.floor}</TD>
-        <TD>{typeLabel[room.type] ?? room.type}</TD>
+        <TD>{ROOM_TYPE_LABELS[room.type] ?? room.type}</TD>
         <TD>{room.capacity}</TD>
         <TD>
           {currencySymbol}
@@ -133,7 +125,7 @@ export function RoomRow({
                     defaultValue={room.type}
                     className="h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
                   >
-                    {Object.entries(typeLabel).map(([value, label]) => (
+                    {Object.entries(ROOM_TYPE_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { hotelConfig } from "@/lib/sms";
 import { getHotelSettings } from "@/lib/hotel-settings";
+import { roomTypeLabel } from "@/lib/room-types";
 import { ReceiptActions } from "./receipt-actions";
 
 export const metadata: Metadata = { title: "Receipt | Hotel HMS" };
@@ -124,7 +125,7 @@ export default async function ReceiptPage({
 
         <p className="mt-3 font-bold uppercase">Stay</p>
         <p>
-          Room: {stay.room.number} ({stay.room.type})
+          Room: {stay.room.number} ({roomTypeLabel(stay.room.type)})
         </p>
         <p>Room rate: {money(stay.room.price)} / night</p>
         <p>Checked in: {stay.checkInAt.toLocaleString()}</p>

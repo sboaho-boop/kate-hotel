@@ -4,15 +4,7 @@ import { useActionState } from "react";
 import type { ActionResult } from "@/app/dashboard/admin/staff/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, FieldError } from "@/components/ui/field";
-
-const TYPE_OPTIONS = [
-  { value: "SINGLE", label: "Single" },
-  { value: "DOUBLE", label: "Double" },
-  { value: "TWIN", label: "Twin" },
-  { value: "SUITE", label: "Suite" },
-  { value: "FAMILY", label: "Family" },
-  { value: "DELUXE", label: "Deluxe" },
-];
+import { ROOM_TYPES, ROOM_TYPE_LABELS } from "@/lib/room-types";
 
 export function CreateRoomForm({ action }: { action: (prev: ActionResult, formData: FormData) => Promise<ActionResult> }) {
   const [state, formAction, pending] = useActionState(action, { success: false, message: "" });
@@ -40,10 +32,10 @@ export function CreateRoomForm({ action }: { action: (prev: ActionResult, formDa
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Room type</Label>
-          <Select id="type" name="type" defaultValue="SINGLE">
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+          <Select id="type" name="type" defaultValue="STUDIO">
+            {ROOM_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {ROOM_TYPE_LABELS[value]}
               </option>
             ))}
           </Select>

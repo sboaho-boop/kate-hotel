@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/rbac";
 import { hotelConfig } from "@/lib/sms";
 import { getHotelSettings } from "@/lib/hotel-settings";
 import { buildReceiptText, type ReceiptData } from "@/lib/receipt";
+import { roomTypeLabel } from "@/lib/room-types";
 
 const methodLabel: Record<string, string> = {
   CASH: "Cash",
@@ -70,7 +71,7 @@ export async function GET(
     guestPhone: stay.guest.phone,
     guestNationalId: stay.guest.nationalId,
     roomNumber: stay.room.number,
-    roomType: stay.room.type,
+    roomType: roomTypeLabel(stay.room.type),
     roomRate: stay.room.price,
     checkInAt: stay.checkInAt.toLocaleString("en-GB"),
     checkoutAt: dateOnly(checkoutDate) + (stay.checkOutAt ? "" : " (expected)"),

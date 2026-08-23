@@ -10,7 +10,7 @@ import type { ActionResult } from "@/app/dashboard/admin/staff/actions";
 const createRoomSchema = z.object({
   number: z.string().trim().min(1, "Room number is required"),
   floor: z.coerce.number().int().min(0, "Floor must be 0 or more"),
-  type: z.enum(["SINGLE", "DOUBLE", "TWIN", "SUITE", "FAMILY", "DELUXE"]),
+  type: z.enum(["MICRO", "STUDIO", "ONE_BEDROOM", "TWO_BEDROOM"]),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   price: z.coerce.number().positive("Price must be greater than 0"),
 });
